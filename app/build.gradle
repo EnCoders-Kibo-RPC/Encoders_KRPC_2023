@@ -5,7 +5,7 @@ android {
     compileSdkVersion 26
     buildToolsVersion "26.0.2"
     defaultConfig {
-        applicationId "jp.jaxa.iss.kibo.rpc.defaultapk" +
+        applicationId "jp.jaxa.iss.kibo.rpc.encoders" +
                 ""
         minSdkVersion 24
         targetSdkVersion 26
