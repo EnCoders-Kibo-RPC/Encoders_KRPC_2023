@@ -66,18 +66,19 @@ public class NodeGraph {
      *
      * @param startId The ID of the start node (This must already be part of the graph)
      * @param targetIds An array of IDs to return paths to
-     * @param distanceFunction A function to be used to determine the distance between two nodes
+     * @param durationFunction A function to be used to determine the distance between two nodes
      * @return An array of NodePaths that lead to the nodes specified by targetIds
      */
-    public NodePath[] shortestPath(int startId, int[] targetIds, ToDoubleBiFunction<Node, Node> distanceFunction) {
-        final Map<Integer, Double> distanceMap = new HashMap<>();
+    public NodePath[] shortestPath(int startId, Set<Integer> targetIds, ToDoubleBiFunction<Node, Node> durationFunction) {
+        final Map<Integer, Double> durationMap = new HashMap<>();
         Map<Integer, Node> previousNodes = new HashMap<>();
         Set<Integer> visitedNodes = new HashSet<>();
 
+        // a priority queue ordered by travel duration from the start point
         PriorityQueue<Node> pq = new PriorityQueue<>(new Comparator<Node>() {
             @Override
             public int compare(Node o1, Node o2) {
-                return (int)Math.signum(distanceMap.get(o1.getId()) - distanceMap.get(o2.getId()));
+                return (int)Math.signum(durationMap.get(o1.getId()) - durationMap.get(o2.getId()));
             }
         });
 
@@ -87,10 +88,10 @@ public class NodeGraph {
             previousNodes.put(n.getId(), null);
 
             if(n.getId() == startId) {
-                distanceMap.put(n.getId(), 0.0);
+                durationMap.put(n.getId(), 0.0);
                 startNode = n;
             } else {
-                distanceMap.put(n.getId(), Double.POSITIVE_INFINITY);
+                durationMap.put(n.getId(), Double.POSITIVE_INFINITY);
                 pq.add(n);
             }
         }
@@ -99,25 +100,55 @@ public class NodeGraph {
             throw new IllegalArgumentException("A node with ID [" + startId + "] does not exist in this graph!");
         }
 
+        // Go through all unvisited nodes
         while(!pq.isEmpty()) {
             Node current = pq.poll();
-            double currentDistance = distanceMap.get(current.getId());
+            double currentDuration = durationMap.get(current.getId());
 
+            // Iterate through unvisited neighbors
             for(Node n : edges.get(current.getId())) {
                 if(visitedNodes.contains(n.getId())) {
                     continue;
                 }
 
-                double distance = currentDistance + distanceFunction.applyAsDouble(current, n);
-                if(distance < distanceMap.get(n.getId())) {
-                    distanceMap.put(n.getId(), distance);
+                double duration = currentDuration + durationFunction.applyAsDouble(current, n);
+                if(duration < durationMap.get(n.getId())) {
+                    durationMap.put(n.getId(), duration);
                     previousNodes.put(n.getId(), current);
+
+                    // Force the priority queue to update
+                    pq.remove(n);
+                    pq.add(n);
                 }
             }
 
             visitedNodes.add(current.getId());
         }
 
-        return null; // REMOVE THIS
+        // Collect the actual paths
+        NodePath[] paths = new NodePath[targetIds.size()];
+        int insertIdx = 0;
+        for(Node n : nodes) {
+            if(targetIds.contains(n.getId())) {
+                double duration = durationMap.get(n.getId());
+
+                // Set to null if the node is unreachable
+                if(duration == Double.POSITIVE_INFINITY) {
+                    paths[insertIdx++] = null;
+                    continue;
+                }
+
+                // Backtrack through previous nodes to get the full path
+                List<Node> pathNodes = new ArrayList<>();
+                Node pathNode = n;
+                while(pathNode != null) {
+                    pathNodes.add(0, pathNode);
+                    pathNode = previousNodes.get(pathNode.getId());
+                }
+                paths[insertIdx++] = new NodePath(pathNodes, durationMap.get(n.getId()));
+            }
+        }
+
+        return paths;
     }
 }
