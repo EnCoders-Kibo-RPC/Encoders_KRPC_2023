@@ -1,9 +1,13 @@
 package jp.jaxa.iss.kibo.rpc.encoders.PathPlanning;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.function.ToDoubleBiFunction;
 
 /**
@@ -61,41 +65,59 @@ public class NodeGraph {
      * Determine the shortest path from one node to another
      *
      * @param startId The ID of the start node (This must already be part of the graph)
-     * @param endId The ID of the end node (This must already be part of the graph)
+     * @param targetIds An array of IDs to return paths to
      * @param distanceFunction A function to be used to determine the distance between two nodes
-     * @return A pathResult object if the path was successfully generated or null if the path is
-     * impossible
+     * @return An array of NodePaths that lead to the nodes specified by targetIds
      */
-    public PathResult shortestPath(int startId, int endId, ToDoubleBiFunction<Node, Node> distanceFunction) {
-        // TODO
-        return null;
+    public NodePath[] shortestPath(int startId, int[] targetIds, ToDoubleBiFunction<Node, Node> distanceFunction) {
+        final Map<Integer, Double> distanceMap = new HashMap<>();
+        Map<Integer, Node> previousNodes = new HashMap<>();
+        Set<Integer> visitedNodes = new HashSet<>();
+
+        PriorityQueue<Node> pq = new PriorityQueue<>(new Comparator<Node>() {
+            @Override
+            public int compare(Node o1, Node o2) {
+                return (int)Math.signum(distanceMap.get(o1.getId()) - distanceMap.get(o2.getId()));
+            }
+        });
+
+        Node startNode = null;
+
+        for(Node n : nodes) {
+            previousNodes.put(n.getId(), null);
+
+            if(n.getId() == startId) {
+                distanceMap.put(n.getId(), 0.0);
+                startNode = n;
+            } else {
+                distanceMap.put(n.getId(), Double.POSITIVE_INFINITY);
+                pq.add(n);
+            }
+        }
+
+        if(startNode == null) {
+            throw new IllegalArgumentException("A node with ID [" + startId + "] does not exist in this graph!");
+        }
+
+        while(!pq.isEmpty()) {
+            Node current = pq.poll();
+            double currentDistance = distanceMap.get(current.getId());
+
+            for(Node n : edges.get(current.getId())) {
+                if(visitedNodes.contains(n.getId())) {
+                    continue;
+                }
+
+                double distance = currentDistance + distanceFunction.applyAsDouble(current, n);
+                if(distance < distanceMap.get(n.getId())) {
+                    distanceMap.put(n.getId(), distance);
+                    previousNodes.put(n.getId(), current);
+                }
+            }
+
+            visitedNodes.add(current.getId());
+        }
+
+        return null; // REMOVE THIS
     }
-
-    /**
-     * This class is to store the results of a path generation
-     */
-    public static class PathResult {
-        private List<Node> pathNodes;
-        private double time;
-
-        /**
-         * Construct a new PathResult
-         *
-         * @param pathNodes The nodes of the path, index 0 is the start and the last index is the end
-         * @param time The time to complete the path in seconds
-         */
-        public PathResult(List<Node> pathNodes, double time) {
-            this.pathNodes = pathNodes;
-            this.time = time;
-        }
-
-        public List<Node> getNodes() {
-            return pathNodes;
-        }
-
-        public double getTime() {
-            return time;
-        }
-    }
-
 }
