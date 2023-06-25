@@ -1,4 +1,4 @@
-package jp.jaxa.iss.kibo.rpc.encoders.PathPlanning;
+package jp.jaxa.iss.kibo.rpc.encoders.pathPlanning;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -96,7 +96,7 @@ public class NodeGraph {
      * @param durationFunction A function to be used to determine the distance between two nodes
      * @return An array of NodePaths that lead to the nodes specified by targetIds
      */
-    public NodePath[] shortestPath(int startId, Set<Integer> targetIds, ToDoubleBiFunction<Node, Node> durationFunction) {
+    public Map<Integer, NodePath> shortestPath(int startId, Set<Integer> targetIds, ToDoubleBiFunction<Node, Node> durationFunction) {
         final Map<Integer, Double> durationMap = new HashMap<>();
         Map<Integer, Node> previousNodes = new HashMap<>();
         Set<Integer> visitedNodes = new HashSet<>();
@@ -154,15 +154,14 @@ public class NodeGraph {
         }
 
         // Collect the actual paths
-        NodePath[] paths = new NodePath[targetIds.size()];
-        int insertIdx = 0;
+        Map<Integer, NodePath> paths = new HashMap<>();
         for(Node n : nodes) {
             if(targetIds.contains(n.getId())) {
                 double duration = durationMap.get(n.getId());
 
                 // Set to null if the node is unreachable
                 if(duration == Double.POSITIVE_INFINITY) {
-                    paths[insertIdx++] = null;
+                    paths.put(n.getId(), null);
                     continue;
                 }
 
@@ -173,7 +172,8 @@ public class NodeGraph {
                     pathNodes.add(0, pathNode);
                     pathNode = previousNodes.get(pathNode.getId());
                 }
-                paths[insertIdx++] = new NodePath(pathNodes, durationMap.get(n.getId()));
+                pathNodes.remove(0); // We don't need to travel to the node of origin
+                paths.put(n.getId(), new NodePath(pathNodes, durationMap.get(n.getId())));
             }
         }
 

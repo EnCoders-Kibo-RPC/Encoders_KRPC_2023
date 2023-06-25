@@ -1,4 +1,4 @@
-package jp.jaxa.iss.kibo.rpc.encoders.PathPlanning;
+package jp.jaxa.iss.kibo.rpc.encoders.pathPlanning;
 
 import java.util.List;
 

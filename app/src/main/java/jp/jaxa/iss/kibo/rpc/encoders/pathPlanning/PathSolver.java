@@ -1,7 +1,6 @@
-package jp.jaxa.iss.kibo.rpc.encoders.PathPlanning;
+package jp.jaxa.iss.kibo.rpc.encoders.pathPlanning;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -227,7 +226,7 @@ public class PathSolver {
         graph.addConnection(TARGET_SIX, QR_CODE);
     }
 
-    public NodePath[] getPaths(Location start, Location[] endpoints) {
+    public Map<Integer, NodePath> getPaths(Location start, Location[] endpoints) {
         Set<Integer> endIdSet = new HashSet<>();
         for(Location loc : endpoints) {
             endIdSet.add(loc.id);
@@ -241,6 +240,27 @@ public class PathSolver {
         });
     }
 
+    public Location targetIdToLocation(int targetId) {
+        if(targetId >= 1 && targetId <= 6) {
+            return Location.values()[targetId + 1];
+        } else {
+            return Location.INVALID;
+        }
+    }
+
+    public int locationToTargetId(Location location) {
+        return location.ordinal() - 1;
+    }
+
+    public Location nodeIdToLocation(int nodeId) {
+        if(nodeId < 1 || nodeId > 9) {
+            return Location.INVALID;
+        } else {
+            return Location.values()[nodeId - 1];
+        }
+    }
+
+
     /**
      * Locations of interest on the field
      */
@@ -253,7 +273,8 @@ public class PathSolver {
         TARGET_FOUR(6),
         TARGET_FIVE(7),
         TARGET_SIX(8),
-        QR_CODE(9);
+        QR_CODE(9),
+        INVALID(-1);
 
         public final int id;
 

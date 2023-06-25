@@ -1,4 +1,4 @@
-package jp.jaxa.iss.kibo.rpc.encoders.PathPlanning;
+package jp.jaxa.iss.kibo.rpc.encoders.pathPlanning;
 
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
@@ -75,7 +75,7 @@ public class Node {
      */
     public static double calculateTravelTime(Node startNode, Node endNode) {
         double distance = distance(startNode, endNode);
-        double acceleration = 0.06;
+        double acceleration = 0.04;
 
         // Calculate the time taken for the robot to travel the distance
         double time = Math.sqrt((2 * distance) / acceleration);
