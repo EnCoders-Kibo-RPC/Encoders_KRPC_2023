@@ -31,11 +31,19 @@ public class NodeGraph {
     }
 
     /**
+     * Construct a NodeGraph with no initial edges
+     *
+     * @param initialNodes The initial nodes
+     */
+    public NodeGraph(List<Node> initialNodes) {
+        this(initialNodes, new HashMap<Integer, List<Node>>());
+    }
+
+    /**
      * Construct a NodeGraph with no initial nodes or edges
      */
     public NodeGraph() {
-        nodes = new ArrayList<>();
-        edges = new HashMap<>();
+        this(new ArrayList<Node>());
     }
 
     /**
@@ -60,6 +68,25 @@ public class NodeGraph {
     public void addNode(Node node) {
         addNode(node, new ArrayList<Node>());
     }
+
+    /**
+     * Add a bidirectional connection between two nodes
+     *
+     * @param node
+     * @param connected
+     */
+    public void addConnection(Node node, Node connected) {
+        if(edges.get(node.getId()) == null) {
+            edges.put(node.getId(), new ArrayList<Node>());
+        }
+        edges.get(node.getId()).add(connected);
+
+        if(edges.get(connected.getId()) == null) {
+            edges.put(connected.getId(), new ArrayList<Node>());
+        }
+        edges.get(connected.getId()).add(node);
+    }
+
 
     /**
      * Determine the shortest path from one node to another
@@ -89,6 +116,7 @@ public class NodeGraph {
 
             if(n.getId() == startId) {
                 durationMap.put(n.getId(), 0.0);
+                pq.add(n);
                 startNode = n;
             } else {
                 durationMap.put(n.getId(), Double.POSITIVE_INFINITY);

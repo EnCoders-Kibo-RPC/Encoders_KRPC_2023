@@ -65,4 +65,21 @@ public class Node {
           Math.pow(n1.getLocation().getZ() - n2.getLocation().getZ(), 2)
         );
     }
+
+    /**
+     * Calculates the time it takes for a robot to travel between two coordinates in a zero-gravity environment.
+     *
+     * @param startNode the starting node containing the coordinate as a Point object
+     * @param endNode   the ending node containing the coordinate as a Point object
+     * @return the time taken for the robot to travel between the coordinates in seconds
+     */
+    public static double calculateTravelTime(Node startNode, Node endNode) {
+        double distance = distance(startNode, endNode);
+        double acceleration = 0.06;
+
+        // Calculate the time taken for the robot to travel the distance
+        double time = Math.sqrt((2 * distance) / acceleration);
+
+        return time;
+    }
 }

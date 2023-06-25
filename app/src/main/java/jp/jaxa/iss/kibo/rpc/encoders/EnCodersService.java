@@ -1,21 +1,20 @@
 package jp.jaxa.iss.kibo.rpc.encoders;
 
-import android.util.Log;
+import android.graphics.Bitmap;
+
+import org.opencv.core.Mat;
 
 import jp.jaxa.iss.kibo.rpc.api.KiboRpcService;
+import jp.jaxa.iss.kibo.rpc.encoders.PathPlanning.Node;
+import jp.jaxa.iss.kibo.rpc.encoders.PathPlanning.NodePath;
+import jp.jaxa.iss.kibo.rpc.encoders.PathPlanning.PathSolver;
+import jp.jaxa.iss.kibo.rpc.encoders.PathPlanning.PathSolver.Location;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import static jp.jaxa.iss.kibo.rpc.encoders.PathPlanning.PathSolver.Location.START;
+import static jp.jaxa.iss.kibo.rpc.encoders.PathPlanning.PathSolver.Location.TARGET_ONE;
 
-import gov.nasa.arc.astrobee.Result;
-import gov.nasa.arc.astrobee.types.Point;
-import gov.nasa.arc.astrobee.types.Quaternion;
+import android.util.Log;
 
-import org.opencv.objdetect.QRCodeDetector;
-import org.opencv.core.*;
-import org.opencv.utils.Converters;
 //import org.opencv.aruco.*;
 
 /**
@@ -32,7 +31,16 @@ public class EnCodersService extends KiboRpcService {
         api.startMission();
 
         // TODO: Main robot logic
+        PathSolver pathSolver = new PathSolver();
 
+        NodePath path = pathSolver.getPaths(START, new Location[] {TARGET_ONE,})[0];
+        String result = "";
+        for(Node n : path.getNodes()) {
+            result += ("n.getId() = " + n.getId()) + "\n";
+        }
+
+        Log.d(TAG, result);
+        api.reportMissionCompletion("this simulation sucks");
 
         // send mission completion
     }
