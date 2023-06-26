@@ -29,12 +29,12 @@ import jp.jaxa.iss.kibo.rpc.encoders.utilities.QrCodeUtility;
 public class EnCodersService extends KiboRpcService {
     private final String TAG = this.getClass().getSimpleName();
 
-    private static final double TARGET_PROCESSING_SECONDS = 2;
+    private static final double TARGET_PROCESSING_SECONDS = 3;
     private static final double GOAL_PROCESSING_SECONDS = 1;
 
     // Robot constraints in m/s and m/s^2 respectively
     private static final double MAX_VELOCITY = 0.5;
-    private static final double MAX_ACCELERATION = 0.008;
+    private static final double MAX_ACCELERATION = 0.007;
 
     private static final int GAME_DURATION = 300;
     private static final int PHASE_DURATION = 120;
@@ -73,6 +73,7 @@ public class EnCodersService extends KiboRpcService {
 
         int phase = 1;
         double lastPhaseStartSeconds = 0;
+        boolean waitForNextPhase = false;
 
         // Main loop:
         for(int j = 0; j < MAX_LOOP_EXECUTIONS; j++) {
@@ -94,10 +95,18 @@ public class EnCodersService extends KiboRpcService {
                 lastPhaseStartSeconds = getTimeSeconds();
                 phase++;
                 phaseTimeLeft = PHASE_DURATION;
+                waitForNextPhase = false;
             }
 
-            final int currentPhase = (GAME_DURATION - (int)remainingSeconds)/PHASE_DURATION;
-            boolean isLastPhase = currentPhase == 2;
+            if(waitForNextPhase) {
+                j--;
+                try {
+                    Thread.sleep(1000);
+                } catch(Exception ex) {
+                    ex.printStackTrace();
+                }
+                continue;
+            }
 
 
             // Filter to only paths that can be completed in the time limit
@@ -192,36 +201,24 @@ public class EnCodersService extends KiboRpcService {
                 if((GAME_DURATION - getTimeSeconds()) - goalPath.getDuration() <= 30) {
                     break;
                 } else {
-                    if(currentLocation != Location.NAV_6) {
-                        // Move to a central area
-                        NodePath path = pathSolver.getPaths(currentLocation, new Location[] {Location.NAV_6}).get(Location.NAV_6.id);
-                        Node fin = pathFollower.followPath(path, new BooleanSupplier() {
-                            @Override
-                            public boolean getAsBoolean() {
-                                // Abort if the phase changes
-                                return (GAME_DURATION - (int)(api.getTimeRemaining().get(1)/1000))/PHASE_DURATION != currentPhase;
-                            }
-                        });
-
-                        if(fin != null) {
-                            currentLocation = pathSolver.nodeIdToLocation(fin.getId());
-                        }
-                    }
+//                    if(currentLocation != Location.NAV_6) {
+//                        // Move to a central area
+//                        NodePath path = pathSolver.getPaths(currentLocation, new Location[] {Location.NAV_6}).get(Location.NAV_6.id);
+//                        Node fin = pathFollower.followPath(path, new BooleanSupplier() {
+//                            @Override
+//                            public boolean getAsBoolean() {
+//                                // Abort if the phase changes
+//                                return (GAME_DURATION - (int)(api.getTimeRemaining().get(1)/1000))/PHASE_DURATION != phase;
+//                            }
+//                        });
+//
+//                        if(fin != null) {
+//                            currentLocation = pathSolver.nodeIdToLocation(fin.getId());
+//                        }
+//                    }
 
                     // Wait out the rest of the phase in the central location
-                    if((api.getTimeRemaining().get(1)/1000)/PHASE_DURATION == currentPhase) {
-                        try {
-
-                            int phaseSecondsLeft = (int)Math.ceil(PHASE_DURATION - (getTimeSeconds() - lastPhaseStartSeconds));
-                            Thread.sleep(phaseSecondsLeft * 1000);
-                            continue;
-                        } catch(Exception ex) {
-                            ex.printStackTrace();
-                        }
-                    } else {
-                        continue;
-                    }
-
+                    waitForNextPhase = true;
                 }
             }
 
@@ -234,7 +231,7 @@ public class EnCodersService extends KiboRpcService {
 
             api.laserControl(true);
             try {
-                Thread.sleep(1000);
+                Thread.sleep(3000);
             } catch(Exception ex) {
                 ex.printStackTrace();
             }
