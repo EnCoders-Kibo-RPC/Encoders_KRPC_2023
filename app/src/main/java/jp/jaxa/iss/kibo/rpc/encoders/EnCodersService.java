@@ -34,7 +34,7 @@ public class EnCodersService extends KiboRpcService {
 
     // Robot constraints in m/s and m/s^2 respectively
     private static final double MAX_VELOCITY = 0.5;
-    private static final double MAX_ACCELERATION = 0.01;
+    private static final double MAX_ACCELERATION = 0.008;
 
     private static final int GAME_DURATION = 300;
     private static final int PHASE_DURATION = 120;
@@ -71,6 +71,9 @@ public class EnCodersService extends KiboRpcService {
         Location currentLocation = Location.QR_CODE;
         NodePath goalPath = null;
 
+        int phase = 1;
+        double lastPhaseStartSeconds = 0;
+
         // Main loop:
         for(int j = 0; j < MAX_LOOP_EXECUTIONS; j++) {
 
@@ -85,7 +88,14 @@ public class EnCodersService extends KiboRpcService {
 
             Map<Integer, NodePath> possiblePaths = new HashMap<>();
             double remainingSeconds = (double)(api.getTimeRemaining().get(1)) / 1000;
-            double phaseTimeLeft = PHASE_DURATION - (GAME_DURATION - remainingSeconds)%120;
+            double phaseTimeLeft = PHASE_DURATION - (getTimeSeconds() - lastPhaseStartSeconds);
+
+            if(phaseTimeLeft <= 0) {
+                lastPhaseStartSeconds = getTimeSeconds();
+                phase++;
+                phaseTimeLeft = PHASE_DURATION;
+            }
+
             final int currentPhase = (GAME_DURATION - (int)remainingSeconds)/PHASE_DURATION;
             boolean isLastPhase = currentPhase == 2;
 
@@ -113,8 +123,8 @@ public class EnCodersService extends KiboRpcService {
                 Log.wtf(TAG, "POSSIBLE PATH!!! --> " + key);
                 Log.wtf(TAG, key + ": " + possiblePaths.get(key).getNodes().size());
             }
-
             NodePath idealPath = null;
+
             if(possiblePaths.size() == 1) {
                 for(int key : possiblePaths.keySet()) {
                     idealPath = possiblePaths.get(key);
@@ -179,7 +189,7 @@ public class EnCodersService extends KiboRpcService {
                     }
                 }
             } else {
-                if(isLastPhase) {
+                if((GAME_DURATION - getTimeSeconds()) - goalPath.getDuration() <= 30) {
                     break;
                 } else {
                     if(currentLocation != Location.NAV_6) {
@@ -201,7 +211,9 @@ public class EnCodersService extends KiboRpcService {
                     // Wait out the rest of the phase in the central location
                     if((api.getTimeRemaining().get(1)/1000)/PHASE_DURATION == currentPhase) {
                         try {
-                            Thread.sleep((PHASE_DURATION - (GAME_DURATION - api.getTimeRemaining().get(1)/1000)%120)*1000);
+
+                            int phaseSecondsLeft = (int)Math.ceil(PHASE_DURATION - (getTimeSeconds() - lastPhaseStartSeconds));
+                            Thread.sleep(phaseSecondsLeft * 1000);
                             continue;
                         } catch(Exception ex) {
                             ex.printStackTrace();
@@ -226,6 +238,9 @@ public class EnCodersService extends KiboRpcService {
             } catch(Exception ex) {
                 ex.printStackTrace();
             }
+            if(activeTargets.size() == 1) {
+
+            }
             api.takeTargetSnapshot(pathSolver.locationToTargetId(currentLocation));
             api.laserControl(false);
         }
@@ -241,5 +256,10 @@ public class EnCodersService extends KiboRpcService {
         api.reportMissionCompletion(qrReport);
 
     }
+
+    private double getTimeSeconds() {
+        return (GAME_DURATION - api.getTimeRemaining().get(1)) / 1000.0;
+    }
+
 
 }
