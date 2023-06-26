@@ -182,18 +182,20 @@ public class EnCodersService extends KiboRpcService {
                 if(isLastPhase) {
                     break;
                 } else {
-                    // Move to a central area
-                    NodePath path = pathSolver.getPaths(currentLocation, new Location[] {Location.NAV_6}).get(Location.NAV_6.id);
-                    Node fin = pathFollower.followPath(path, new BooleanSupplier() {
-                        @Override
-                        public boolean getAsBoolean() {
-                            // Abort if the phase changes
-                            return (GAME_DURATION - (int)(api.getTimeRemaining().get(1)/1000))/PHASE_DURATION != currentPhase;
-                        }
-                    });
+                    if(currentLocation != Location.NAV_6) {
+                        // Move to a central area
+                        NodePath path = pathSolver.getPaths(currentLocation, new Location[] {Location.NAV_6}).get(Location.NAV_6.id);
+                        Node fin = pathFollower.followPath(path, new BooleanSupplier() {
+                            @Override
+                            public boolean getAsBoolean() {
+                                // Abort if the phase changes
+                                return (GAME_DURATION - (int)(api.getTimeRemaining().get(1)/1000))/PHASE_DURATION != currentPhase;
+                            }
+                        });
 
-                    if(fin != null) {
-                        currentLocation = pathSolver.nodeIdToLocation(fin.getId());
+                        if(fin != null) {
+                            currentLocation = pathSolver.nodeIdToLocation(fin.getId());
+                        }
                     }
 
                     // Wait out the rest of the phase in the central location
