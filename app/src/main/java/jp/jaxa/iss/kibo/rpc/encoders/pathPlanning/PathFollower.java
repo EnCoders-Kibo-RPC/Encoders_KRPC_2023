@@ -2,6 +2,8 @@ package jp.jaxa.iss.kibo.rpc.encoders.pathPlanning;
 
 import android.util.Log;
 
+import java.util.function.BooleanSupplier;
+
 import gov.nasa.arc.astrobee.Result;
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
@@ -30,21 +32,45 @@ public class PathFollower {
      * Follow a node path by moving to each of its nodes
      *
      * @param path The Node path
-     * @return True if the path was finished successfully, else false.
+     * @param breakoutCondition Stop following the path if this condition evaluates to true.
+     * @return The node that the robot is at following this method
      */
-    public boolean followPath(NodePath path) {
+    public Node followPath(NodePath path, BooleanSupplier breakoutCondition) {
         Node lastNode = path.getNodes().get(path.getNodes().size() - 1);
+        Node prevNode = null;
         for(int i = 0; i < path.getNodes().size(); i++) {
             Node currentNode = path.getNodes().get(i);
 
+            if(breakoutCondition.getAsBoolean()) {
+                return prevNode;
+            }
+
             Log.wtf(TAG, "Going to node with id: " + currentNode.getId());
             if(!safeGoToPosition(currentNode.getLocation(), lastNode.getRotation())) {
-                return false;
+                return prevNode;
             }
+            prevNode = currentNode;
         }
 
-        return true;
+        return lastNode;
     }
+
+    /**
+     * Follow a node path by moving to each of its nodes
+     *
+     * @param path The Node path
+     * @return The node that the robot is at following this method
+     */
+    public Node followPath(NodePath path) {
+        return followPath(path, new BooleanSupplier() {
+            @Override
+            public boolean getAsBoolean() {
+                return false;
+            }
+        });
+    }
+
+
 
     /**
      * Attempt to move to a position, retry if there is an error.

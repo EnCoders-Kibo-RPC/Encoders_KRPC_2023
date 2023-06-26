@@ -156,7 +156,7 @@ public class NodeGraph {
         // Collect the actual paths
         Map<Integer, NodePath> paths = new HashMap<>();
         for(Node n : nodes) {
-            if(targetIds.contains(n.getId())) {
+            if(targetIds.contains(n.getId()) && n.getId() != startId) {
                 double duration = durationMap.get(n.getId());
 
                 // Set to null if the node is unreachable

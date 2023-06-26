@@ -9,14 +9,20 @@ import java.util.function.ToDoubleBiFunction;
 
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
+import jp.jaxa.iss.kibo.rpc.encoders.utilities.TrapezoidProfiler;
 
 /**
  * This class will use the NodeGraph to generate paths on the field
  */
 public class PathSolver {
+    private static final double ANGLE_BUFFER_SECONDS = 7;
+
+    private final TrapezoidProfiler profiler;
     private NodeGraph graph;
 
-    public PathSolver() {
+    public PathSolver(double maxVelocity, double maxAcceleration) {
+        profiler = new TrapezoidProfiler(maxVelocity, maxAcceleration);
+
         List<Node> nodes = new ArrayList<Node>();
 
         // Location Nodes
@@ -78,7 +84,7 @@ public class PathSolver {
         // Navigation Nodes
         Node nav1 = new Node(
             10,
-            new Point(10.503, -9.806, 4.5929),
+            new Point(10.503, -9.806, 4.6492),
             new Quaternion(1, 0, 0, 0)
         );
         nodes.add(nav1);
@@ -235,7 +241,7 @@ public class PathSolver {
         return graph.shortestPath(start.id, endIdSet, new ToDoubleBiFunction<Node, Node>() {
             @Override
             public double applyAsDouble(Node node, Node node2) {
-                return Node.calculateTravelTime(node, node2);
+                return profiler.calculateTravelTime(node.distance(node2)) + ANGLE_BUFFER_SECONDS;
             }
         });
     }
@@ -253,7 +259,7 @@ public class PathSolver {
     }
 
     public Location nodeIdToLocation(int nodeId) {
-        if(nodeId < 1 || nodeId > 9) {
+        if(nodeId < 1 || nodeId > 20) {
             return Location.INVALID;
         } else {
             return Location.values()[nodeId - 1];
@@ -274,6 +280,17 @@ public class PathSolver {
         TARGET_FIVE(7),
         TARGET_SIX(8),
         QR_CODE(9),
+        NAV_1(10),
+        NAV_2(11),
+        NAV_3(12),
+        NAV_4(13),
+        NAV_5(14),
+        NAV_6(15),
+        NAV_7(16),
+        NAV_8(17),
+        NAV_9(18),
+        NAV_10(19),
+        NAV_11(20),
         INVALID(-1);
 
         public final int id;
